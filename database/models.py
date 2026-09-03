@@ -24,8 +24,11 @@ class Contest(Base):
     description: Mapped[str] = mapped_column(Text, nullable=False)
     media_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     winner_count: Mapped[int] = mapped_column(Integer, default=1)
+    max_participants: Mapped[int | None] = mapped_column(Integer, nullable=True) # Maksimal ishtirokchi chegarasi
     button_text: Mapped[str] = mapped_column(String(255), default="🎁 Konkursda Qatnashish")
-    end_date: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    start_date: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow) # Boshlanish vaqti
+    end_date: Mapped[datetime] = mapped_column(DateTime, nullable=False) # Tugash vaqti
+
 
     creator_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)

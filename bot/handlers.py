@@ -79,16 +79,40 @@ async def process_winner_count(message: Message, state: FSMContext):
         return await message.answer("⚠️ Iltimos, faqat musbat raqam kiriting!")
     
     await state.update_data(winner_count=int(message.text))
+    await state.set_state(CreateContestSG.duration_days)
+    await message.answer("⏳ **4-Qadam:** Konkurs necha kun davom etsin? (kunlarda kiriting):\n\n*Masalan: 3*")
+
+@router.message(CreateContestSG.duration_days)
+async def process_duration_days(message: Message, state: FSMContext):
+    if not message.text.isdigit():
+        return await message.answer("⚠️ Iltimos, faqat raqam kiriting!")
+    
+    await state.update_data(duration_days=int(message.text))
+    await state.set_state(CreateContestSG.max_participants)
+    await message.answer(
+        "👥 **5-Qadam:** Maksimal qatnashchilar chegarasini kiriting (Auto-Stop):\n\n"
+        "*(Muayyan son to'lganda konkurs avtomatik to'xtaydi, cheklov bo'lmasa 0 deb kiriting)*\n"
+        "*Masalan: 100*"
+    )
+
+@router.message(CreateContestSG.max_participants)
+async def process_max_participants(message: Message, state: FSMContext):
+    if not message.text.isdigit():
+        return await message.answer("⚠️ Faqat raqam kiriting!")
+    
+    val = int(message.text)
+    await state.update_data(max_participants=val if val > 0 else None)
     await state.set_state(CreateContestSG.sponsors)
     await message.answer(
-        "📢 **4-Qadam:** Majburiy obuna kanallarini birma-bir yoki birga yuboring!\n\n"
+        "📢 **6-Qadam:** Majburiy obuna kanallarini yuboring!\n\n"
         "Siz 2 xil usulda kanal qo'shishingiz mumkin:\n"
         "1. Kanal **@username**'ini yuboring (Masalan: `@mychannel`)\n"
-        "2. O'sha kanaldan istalgan bir xabarni shu botga **Forward (Uzatish)** qiling!\n\n"
+        "2. O'sha kanaldan istalgan bir xabarni shu botga **Forward** qiling!\n\n"
         "*(Eslatma: Bot kanallarda Admin bo'lishi kerak!)*\n\n"
         "Barcha kanallarni yuborib bo'lgach, pastdagi **'✅ Tayyor!'** tugmasini bosing.",
         reply_markup=get_sponsors_keyboard(0)
     )
+
 
 @router.callback_query(F.data == "cancel_creation")
 async def cancel_creation_handler(call: CallbackQuery, state: FSMContext):
@@ -169,14 +193,21 @@ async def process_button_text(message: Message, state: FSMContext):
     button_text = message.text.strip()
     data = await state.get_data()
     
+    days = data.get("duration_days", 7)
+    start_dt = datetime.utcnow()
+    end_dt = start_dt + timedelta(days=days)
+    max_p = data.get("max_participants")
+
     # Bazaga saqlash
     async with AsyncSessionLocal() as session:
         new_contest = Contest(
             title=data["title"],
             description=data["description"],
             winner_count=data["winner_count"],
+            max_participants=max_p,
             button_text=button_text,
-            end_date=datetime.utcnow() + timedelta(days=7),
+            start_date=start_dt,
+            end_date=end_dt,
             creator_id=message.from_user.id,
             is_active=True
         )
@@ -196,6 +227,7 @@ async def process_button_text(message: Message, state: FSMContext):
         contest_id = new_contest.id
 
     await state.clear()
+
 
     # Yaratilgan konkurs postining ko'rinishi
     post_text = (

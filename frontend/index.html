@@ -124,6 +124,21 @@
                 </div>
             </div>
 
+            <!-- Captcha Modal / Card (Join bo'lishdan oldin) -->
+            <div id="captcha-card" class="glass-card-glow rounded-3xl p-6 text-center relative overflow-hidden space-y-4">
+                <div class="w-12 h-12 bg-indigo-500/20 text-indigo-400 rounded-2xl flex items-center justify-center mx-auto border border-indigo-500/30">
+                    <i class="fa-solid fa-robot text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-white mb-1">Xavfsizlik Tekshiruvi (Captcha)</h3>
+                    <p class="text-slate-300 text-xs">Anti-Bot: Iltimos, pastdagi misol javobini kiriting:</p>
+                </div>
+                <div class="flex items-center justify-center space-x-3 my-2">
+                    <span id="captcha-question" class="text-xl font-bold font-mono text-indigo-300 bg-indigo-500/20 px-4 py-2 rounded-xl border border-indigo-500/30">7 + 5 = ?</span>
+                    <input type="number" id="captcha-answer" placeholder="Javob" class="w-24 bg-white/10 border border-white/20 rounded-xl px-3 py-2 text-white font-bold text-center focus:outline-none focus:border-indigo-500">
+                </div>
+            </div>
+
             <!-- Action Button -->
             <div id="action-container" class="pt-2">
                 <button id="join-btn" onclick="handleJoinContest()" class="w-full btn-neon text-white font-bold py-4 px-6 rounded-2xl text-base flex items-center justify-center space-x-2 shadow-xl">
@@ -143,6 +158,13 @@
             tg.ready();
             tg.expand();
         }
+
+        // Math Captcha Generator
+        let num1 = Math.floor(Math.random() * 10) + 1;
+        let num2 = Math.floor(Math.random() * 10) + 1;
+        let captchaResult = num1 + num2;
+        
+        document.getElementById('captcha-question').innerText = `${num1} + ${num2} = ?`;
 
         // URL parametrlaridan yoki Telegram startapp paramidan contest_id olish
         const urlParams = new URLSearchParams(window.location.search);
@@ -164,8 +186,6 @@
                         'x-telegram-init-data': initData
                     }
                 });
-
-
 
                 if (!response.ok) {
                     throw new Error("Konkursni yuklashda xatolik");
@@ -190,7 +210,7 @@
 
             document.getElementById('contest-title').innerText = data.title;
             document.getElementById('contest-desc').innerText = data.description;
-            document.getElementById('participants-count').innerText = data.participants_count;
+            document.getElementById('participants-count').innerText = data.participants_count + (data.max_participants ? ` / ${data.max_participants}` : '');
             
             const endDate = new Date(data.end_date);
             document.getElementById('end-date').innerText = endDate.toLocaleDateString() + ' ' + endDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
@@ -204,6 +224,7 @@
             if (data.is_joined) {
                 document.getElementById('ticket-card').classList.remove('hidden');
                 document.getElementById('ticket-code').innerText = '#' + data.ticket_code;
+                document.getElementById('captcha-card').classList.add('hidden');
                 document.getElementById('action-container').classList.add('hidden');
             }
 
@@ -247,6 +268,12 @@
         }
 
         async function handleJoinContest() {
+            const userAnswer = parseInt(document.getElementById('captcha-answer').value);
+            if (isNaN(userAnswer) || userAnswer !== captchaResult) {
+                tg?.showAlert("⚠️ Captcha javobi noto'g'ri! Qayta urinib ko'ring.");
+                return;
+            }
+
             if (tg?.HapticFeedback) {
                 tg.HapticFeedback.notificationOccurred('success');
             }
@@ -262,7 +289,6 @@
                         'x-telegram-init-data': initData
                     }
                 });
-
 
                 const result = await response.json();
 
@@ -284,3 +310,4 @@
     </script>
 </body>
 </html>
+

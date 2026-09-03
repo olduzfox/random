@@ -82,11 +82,13 @@ async def get_contest_details(
         "end_date": contest.end_date.isoformat(),
         "is_active": contest.is_active,
         "participants_count": len(contest.participants),
+        "max_participants": contest.max_participants,
         "is_joined": is_joined,
         "ticket_code": ticket_code,
         "sponsors": sponsors_list,
         "user_info": user_data
     }
+
 
 @router.post("/contest/{contest_id}/join")
 async def join_contest(
@@ -123,7 +125,14 @@ async def join_contest(
     contest = result.scalar_one_or_none()
 
     if not contest or not contest.is_active:
-        raise HTTPException(status_code=400, detail="Konkurs aktiv emas yoki topilmadi")
+        raise HTTPException(status_code=400, detail="Konkurs tugatilgan yoki faol emas!")
+
+    # Maksimal qatnashchilar soni to'lgan bo'lsa auto-stop
+    if contest.max_participants and len(contest.participants) >= contest.max_participants:
+        contest.is_active = False
+        await db.commit()
+        raise HTTPException(status_code=400, detail="⚠️ Ushrbu konkursda maksimal ishtirokchilar soni to'ldi!")
+
 
     # Allaqachon qatnashganmi?
     p_stmt = select(Participant).where(

@@ -1,0 +1,8 @@
+giveaway.db
+__pycache__/
+bot/__pycache__/
+database/__pycache__/
+webapp/__pycache__/
+*.pyc
+.env
+venv/

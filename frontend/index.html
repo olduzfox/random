@@ -159,12 +159,12 @@
 
         async function loadContestData() {
             try {
-                const response = await fetch(`/api/contest/${contestId}`, {
+                const response = await fetch(`api/contest/${contestId}`, {
                     headers: {
-                        'x-telegram-init-data': initData,
-                        'bypass-tunnel-reminder': 'true'
+                        'x-telegram-init-data': initData
                     }
                 });
+
 
 
                 if (!response.ok) {
@@ -256,12 +256,13 @@
             joinBtn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> <span>Tekshirilmoqda...</span>`;
 
             try {
-                const response = await fetch(`/api/contest/${contestId}/join`, {
+                const response = await fetch(`api/contest/${contestId}/join`, {
                     method: 'POST',
                     headers: {
                         'x-telegram-init-data': initData
                     }
                 });
+
 
                 const result = await response.json();
 
